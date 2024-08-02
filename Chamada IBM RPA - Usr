@@ -1,0 +1,160 @@
+# %%
+import requests
+import pandas as pd
+import json
+import time
+from dotenv import load_dotenv
+import os 
+
+load_dotenv('./rpa.env')
+
+print('Bibliotecas importadas...')
+
+# Code created by Aldo Guilherme Justiniano 
+# 01/08/2024 - Thiago implement the body section to pass input parameters to be execute on the bot
+
+#Informar servidor correto na url (br1 - br2 - ap1 - uk1 - us1 - eu1)
+
+#url = 'https://{server}api.rpa.ibm.com/v1.0/token'
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# Server ID
+# If you're using a SaaS environment, check your endpoint to identify where your RPA server is hosted (br1 - br2 - ap1 - uk1 - us1 - eu1)
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+server = 'br2'
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# Tenant ID
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+tenantId = os.getenv('TENANTID')
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# Project ID
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+projectId = os.getenv('PROJECTID')
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# BOT Name
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+botId = os.getenv('BOTID')
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# Server URL, usually the endpoint should look like this: https://{server}api.rpa.ibm.com
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+baseURL = f"https://{server}api.rpa.ibm.com"
+
+url = f"{baseURL}/v1.0/token"
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------
+# Here is where the user input the term to be searched
+# ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+#termoBuscado = input('Please insert your search here')
+
+termoBuscado = 'tela azul windows'
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------
+# Here you can insert the user data
+# ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+username = os.getenv('USERNAME')
+password = os.getenv('PASSWORD')
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------
+# Here is where we're going to call the api
+# ----------------------------------------------------------------------------------------------------------------------------------------------------
+
+get_token_headers = {
+    'Accept': '*/*',   
+    'Connection': 'keep-alive',
+    'Content-Length': '8360,',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Content-Type': 'application/x-www-form-urlencoded',
+    #User-Agent /// Fake ///
+    'User-Agent': 'James Bond',
+    #Insert tenant ID
+    #'tenantId': '88f0fb45-7c74-466b-89e3-6829ec87c113'
+    'tenantId': f"{tenantId}"
+}
+get_token_body = {    
+    'grant_type': 'password',
+    'username': username,
+    'password': password,
+    'culture': 'en-US'
+}
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# Testing if dot Env Library is actually working.
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+#print(f"Meu usuário é: {username}"),
+#print(f"Minha senha é: {password}"),
+#print(f"O tenant Id é: {tenantId}"),
+#print(f"o Project ID é: {projectId}"),
+#print(f"o Bot ID é: {botId}")
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# Validating the API CALL
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+response = requests.post(url, headers=get_token_headers, data=get_token_body)
+
+data_response = response.json()
+
+if response.status_code == 200:
+    statusApiCode = response.status_code
+    print('Login Succeed - {}' .format(statusApiCode))
+else:
+    statusApiCode = response.status_code
+    print('Login Error - {}' .format(statusApiCode))
+
+token = data_response["access_token"]
+
+bot_run_headers = {
+    "Content-Type":"application/json",
+    "Accept":"application/json",
+    "User-Agent": "James Bond",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
+    "Authorization": f"Bearer {token}",
+    "callbackUrl" : "",
+}
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# If your bot have an input please uncomment the input_parameters section below and add the required parameters to call your bot
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+input_parameters = {
+  "termoPesquisa": f'{termoBuscado}',
+}
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# Bot URL 
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+bot_url = f"{baseURL}/v2.0/workspace/{tenantId}/projects/{projectId}/bots/{botId}"
+
+#Adicionando o input como json na chamada post do robo.
+bot_request = requests.post(bot_url, headers=bot_run_headers, json=input_parameters)
+
+#bot_request.status_code
+bot_request_response = bot_request.json()
+
+#display(bot_request_response)
+projectName = bot_request_response['project']
+statusName = bot_request_response['statusName']
+
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+# Status Message
+# ---------------------------------------------------------------------------------------------------------------------------------------------------- #
+
+print('Execution started on {projectName}, the status is now {statusBot}'.format(projectName = projectName, statusBot = statusName))
+
+time.sleep(15)
+
+print('Please check on the server to make sure your execution is started')
+# %%
+
